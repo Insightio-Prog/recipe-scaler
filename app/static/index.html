@@ -32,11 +32,13 @@ button,select,input,textarea{font:inherit;color:inherit}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn:disabled{opacity:.5}
 .row{display:flex;gap:10px}.row>*{flex:1}
-.pick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:96px;text-align:center;
-  border:2px dashed var(--line);border-radius:14px;background:var(--card);cursor:pointer;padding:8px;font-weight:600}
+.pick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:110px;text-align:center;
+  border:2px dashed var(--line);border-radius:14px;background:var(--card);padding:8px;font-weight:600}
 .pick small{font-weight:400;color:var(--muted)}
 .pick.has{border-style:solid;border-color:var(--ok)}
 .pick input{display:none}
+.pick .acts{display:flex;gap:6px;margin-top:4px}
+.pick .acts button{border:1.5px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;font-size:.85rem;font-weight:600}
 .pick img{max-height:70px;max-width:100%;border-radius:6px}
 input[type=text],input[type=number],select,textarea{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;min-width:0}
 textarea{min-height:110px}
@@ -77,11 +79,13 @@ ol.method{padding-left:22px}ol.method li{margin-bottom:6px}
 <section id="home" class="screen on">
   <h2>Read a recipe card</h2>
   <div class="row">
-    <label class="pick" id="pickFront"><span>📷 Front</span><small>Tap to take photo</small>
-      <input type="file" accept="image/*" capture="environment" id="fFront"></label>
-    <label class="pick" id="pickBack"><span>📷 Back</span><small>Optional</small>
-      <input type="file" accept="image/*" capture="environment" id="fBack"></label>
+    <div class="pick" id="pickFront"></div>
+    <div class="pick" id="pickBack"></div>
   </div>
+  <input type="file" accept="image/*" capture="environment" id="camFront" hidden>
+  <input type="file" accept="image/*" id="fileFront" hidden>
+  <input type="file" accept="image/*" capture="environment" id="camBack" hidden>
+  <input type="file" accept="image/*" id="fileBack" hidden>
   <p class="muted">Tip: good light, no glare, whole card in view.</p>
   <button class="btn" id="readBtn" disabled>Read recipe</button>
   <div class="err" id="readErr"></div>
@@ -198,18 +202,26 @@ $("homeBtn").onclick = () => { renderLibrary(); show("home"); };
 
 // ---------- home: photos ----------
 const photos = {front:null, back:null};
-function wirePick(inputId, pickId, key, label){
+function drawPick(key, label, optional){
+  const pick = $(key==="front"?"pickFront":"pickBack"), f = photos[key];
+  pick.classList.toggle("has", !!f); pick.replaceChildren();
+  if(f){ const img = el("img",{alt:label}); img.src = URL.createObjectURL(f); pick.append(img); }
+  else pick.append(el("span",{text:label}), el("small",{text:optional?"Optional":"Needed"}));
+  const cap = key==="front"?"camFront":"camBack", fil = key==="front"?"fileFront":"fileBack";
+  pick.append(el("div",{class:"acts"},[
+    el("button",{type:"button",text:"📷 Camera",onclick:()=>$(cap).click()}),
+    el("button",{type:"button",text:"🖼 Upload",onclick:()=>$(fil).click()})]));
+  $("readBtn").disabled = !photos.front && !photos.back;
+}
+function wirePick(inputId, key, label, optional){
   $(inputId).addEventListener("change", e=>{
-    const f = e.target.files[0]; photos[key] = f||null;
-    const pick = $(pickId); pick.classList.toggle("has", !!f);
-    pick.replaceChildren();
-    if(f){ const img = el("img",{alt:label}); img.src = URL.createObjectURL(f); pick.append(img, el("small",{text:"Tap to retake"}), e.target); }
-    else { pick.append(el("span",{text:"📷 "+label}), e.target); }
-    $("readBtn").disabled = !photos.front && !photos.back;
+    const f = e.target.files[0]; if(f){ photos[key] = f; }
+    e.target.value = ""; drawPick(key, label, optional);
   });
 }
-wirePick("fFront","pickFront","front","Front");
-wirePick("fBack","pickBack","back","Back");
+wirePick("camFront","front","Front",false); wirePick("fileFront","front","Front",false);
+wirePick("camBack","back","Back",true); wirePick("fileBack","back","Back",true);
+drawPick("front","Front",false); drawPick("back","Back",true);
 
 $("readBtn").onclick = async () => {
   const btn = $("readBtn"); $("readErr").textContent = "";
