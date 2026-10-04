@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a24">
+<title>Recipe Scaler</title>
+<style>
+:root{
+  --bg:#f6f3ec; --card:#fffdf8; --ink:#1d2420; --muted:#667068; --line:#ddd6c6;
+  --accent:#d9591f; --accent-ink:#fff; --ok:#2f7d4f; --warn:#fff1c9; --warn-line:#e0b000; --bad:#b3261e;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#161b18; --card:#1f2622; --ink:#f0ede4; --muted:#a2aaa3; --line:#34403a;
+    --accent:#ef7a45; --accent-ink:#1a1209; --ok:#58b57f; --warn:#3a3114; --warn-line:#a98600; --bad:#ff8a80; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding-bottom:max(24px,env(safe-area-inset-bottom))}
+header{background:#1f2a24;color:#f6f3ec;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header h1{font-size:1.15rem;margin:0;flex:1}
+header button{background:transparent;border:1px solid #5b6b61;color:#f6f3ec;border-radius:8px;padding:6px 10px;font-size:.9rem}
+.demo{background:var(--warn);border-bottom:1px solid var(--warn-line);font-size:.85rem;padding:8px 16px;color:var(--ink)}
+main{max-width:640px;margin:0 auto;padding:16px}
+.screen{display:none}.screen.on{display:block}
+h2{font-size:1.2rem;margin:20px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+button,select,input,textarea{font:inherit;color:inherit}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px 16px;font-weight:650;background:var(--accent);color:var(--accent-ink);font-size:1.05rem}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.pick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:96px;text-align:center;
+  border:2px dashed var(--line);border-radius:14px;background:var(--card);cursor:pointer;padding:8px;font-weight:600}
+.pick small{font-weight:400;color:var(--muted)}
+.pick.has{border-style:solid;border-color:var(--ok)}
+.pick input{display:none}
+.pick img{max-height:70px;max-width:100%;border-radius:6px}
+input[type=text],input[type=number],select,textarea{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;min-width:0}
+textarea{min-height:110px}
+label.t{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+.ing{display:grid;grid-template-columns:78px 78px 1fr 40px;gap:6px;margin-bottom:8px;align-items:center}
+.ing.unsure input,.ing.unsure select{border-color:var(--warn-line);background:var(--warn)}
+.ing .x{background:transparent;border:0;color:var(--bad);font-size:1.3rem}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.list .q{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.list .n small{color:var(--muted);display:block}
+.tabs{display:flex;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:3px;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:transparent;border-radius:9px;padding:10px;font-weight:600}
+.tabs button.on{background:var(--accent);color:var(--accent-ink)}
+.big{font-size:1.4rem;font-weight:700;text-align:center}
+.muted{color:var(--muted);font-size:.9rem}
+.err{color:var(--bad);font-weight:600;margin:8px 0}
+.lib{display:flex;align-items:center;gap:8px}
+.lib button.open{flex:1;text-align:left;background:transparent;border:0;padding:10px 0;font-weight:600}
+.lib .del{background:transparent;border:0;color:var(--muted);font-size:1.1rem;padding:8px}
+.chk{display:flex;align-items:center;gap:10px;margin:8px 0}.chk input{width:22px;height:22px}
+ol.method{padding-left:22px}ol.method li{margin-bottom:6px}
+.spin{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+@media print{header,.demo,.noprint{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Recipe Scaler</h1>
+  <button id="homeBtn" class="noprint" hidden>Home</button>
+</header>
+<div class="demo">Demo: sample recipes only. Your recipes are saved on this device, never on the server.</div>
+
+<main>
+<!-- HOME -->
+<section id="home" class="screen on">
+  <h2>Read a recipe card</h2>
+  <div class="row">
+    <label class="pick" id="pickFront"><span>📷 Front</span><small>Tap to take photo</small>
+      <input type="file" accept="image/*" capture="environment" id="fFront"></label>
+    <label class="pick" id="pickBack"><span>📷 Back</span><small>Optional</small>
+      <input type="file" accept="image/*" capture="environment" id="fBack"></label>
+  </div>
+  <p class="muted">Tip: good light, no glare, whole card in view.</p>
+  <button class="btn" id="readBtn" disabled>Read recipe</button>
+  <div class="err" id="readErr"></div>
+
+  <h2>Your recipes</h2>
+  <div id="library"></div>
+  <button class="btn ghost" id="samplesBtn">Add sample recipes</button>
+</section>
+
+<!-- CHECK -->
+<section id="check" class="screen">
+  <p class="muted">Check every number against the card before saving. Yellow lines are ones the AI wasn't sure about.</p>
+  <div class="card">
+    <label class="t">Recipe name</label><input type="text" id="cName">
+    <div class="row">
+      <div><label class="t">Portions</label><input type="number" id="cPortions" inputmode="decimal" min="0"></div>
+      <div><label class="t">Portion weight (g)</label><input type="number" id="cWeight" inputmode="decimal" min="0"></div>
+    </div>
+  </div>
+  <h2>Ingredients</h2>
+  <div id="cIngs"></div>
+  <button class="btn ghost" id="addIng">+ Add ingredient</button>
+  <h2>Method</h2>
+  <textarea id="cMethod" placeholder="One step per line"></textarea>
+  <div class="err" id="checkErr"></div>
+  <button class="btn" id="saveBtn" style="margin-top:12px">Save recipe</button>
+</section>
+
+<!-- SCALE -->
+<section id="scale" class="screen">
+  <div class="tabs noprint">
+    <button id="tabPortions" class="on">By portions</button>
+    <button id="tabIng">By ingredient</button>
+  </div>
+  <div class="card noprint" id="inPortions">
+    <label class="t">Portions needed</label>
+    <input type="number" id="sPortions" inputmode="decimal" min="1">
+  </div>
+  <div class="card noprint" id="inIng" hidden>
+    <label class="t">I have…</label>
+    <select id="sIngSel"></select>
+    <div class="row" style="margin-top:8px">
+      <input type="number" id="sAmount" inputmode="decimal" min="0" placeholder="Amount">
+      <select id="sUnit"></select>
+    </div>
+  </div>
+  <label class="chk noprint"><input type="checkbox" id="sPer"> Show per portion</label>
+  <div class="err" id="scaleErr"></div>
+  <div class="card">
+    <div class="big" id="sHead"></div>
+    <div class="muted" style="text-align:center" id="sSub"></div>
+    <ul class="list" id="sList"></ul>
+  </div>
+  <p class="muted" id="sNote">Cooking times and methods don't scale with quantity. Check the method below.</p>
+  <h2>Method</h2>
+  <ol class="method" id="sMethod"></ol>
+  <button class="btn ghost noprint" onclick="window.print()">Print</button>
+</section>
+</main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const KEY = "rs.recipes.v1";
+const UNIT_FAMILY = {g:["g","kg"], kg:["g","kg"], ml:["ml","l"], l:["ml","l"], each:["each"]};
+
+const SAMPLES = [
+ {name:"Chicken & Chickpea Curry (sample)", portions:10, portion_weight_g:380, method:[
+   "Soften the onions in the oil, add garlic and curry paste, cook for 2 minutes.","Add chicken and brown lightly.","Add tomatoes, stock and chickpeas; simmer 25 minutes until the chicken reaches 75°C core.","Stir through spinach and serve with rice."],
+  ingredients:[
+   {name:"Chicken thigh, diced",quantity:1.8,unit:"kg"},{name:"Chickpeas, drained",quantity:800,unit:"g"},
+   {name:"Onion",quantity:400,unit:"g"},{name:"Garlic",quantity:20,unit:"g"},{name:"Curry paste",quantity:120,unit:"g"},
+   {name:"Chopped tomatoes",quantity:1,unit:"kg"},{name:"Chicken stock",quantity:500,unit:"ml"},
+   {name:"Rapeseed oil",quantity:40,unit:"ml"},{name:"Spinach",quantity:300,unit:"g"},{name:"Salt",quantity:null,unit:null,note:"to taste"}]},
+ {name:"Lemon Drizzle Traybake (sample)", portions:20, portion_weight_g:95, method:[
+   "Cream butter and sugar until pale.","Beat in eggs one at a time, fold in flour.","Bake at 170°C for 35 minutes.","Mix lemon juice and icing sugar, pour over while warm."],
+  ingredients:[
+   {name:"Butter",quantity:400,unit:"g"},{name:"Caster sugar",quantity:400,unit:"g"},{name:"Eggs",quantity:8,unit:"each"},
+   {name:"Self-raising flour",quantity:500,unit:"g"},{name:"Lemons, zest and juice",quantity:4,unit:"each"},
+   {name:"Milk",quantity:120,unit:"ml"},{name:"Icing sugar",quantity:200,unit:"g"}]},
+ {name:"Sausage & Bean Casserole (sample)", portions:10, portion_weight_g:400, method:[
+   "Brown the sausages, remove.","Soften onion and carrot, add tomatoes, stock and beans.","Return sausages, simmer 30 minutes."],
+  ingredients:[
+   {name:"Pork sausages",quantity:1.5,unit:"kg"},{name:"Cannellini beans",quantity:1.2,unit:"kg"},
+   {name:"Onion",quantity:300,unit:"g"},{name:"Carrot",quantity:300,unit:"g"},{name:"Chopped tomatoes",quantity:1.5,unit:"kg"},
+   {name:"Vegetable stock",quantity:600,unit:"ml"},{name:"Smoked paprika",quantity:10,unit:"g"}]}
+];
+
+// ---------- storage (try/catch: private windows can block it) ----------
+let mem = [];
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||"[]"); }catch(e){ return mem; } }
+function store(list){ mem = list; try{ localStorage.setItem(KEY, JSON.stringify(list)); }catch(e){} }
+const uid = () => Math.random().toString(36).slice(2,10);
+
+// ---------- tiny DOM helper (never uses innerHTML with user text) ----------
+function el(tag, props={}, kids=[]){
+  const n = document.createElement(tag);
+  for(const [k,v] of Object.entries(props)){
+    if(k==="class") n.className=v; else if(k.startsWith("on")) n.addEventListener(k.slice(2),v);
+    else if(k==="text") n.textContent=v; else n.setAttribute(k,v);
+  }
+  for(const c of [].concat(kids)) if(c!=null) n.append(c);
+  return n;
+}
+
+// ---------- navigation ----------
+function show(id, title){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id===id));
+  $("title").textContent = title || "Recipe Scaler";
+  $("homeBtn").hidden = id==="home";
+  window.scrollTo(0,0);
+}
+$("homeBtn").onclick = () => { renderLibrary(); show("home"); };
+
+// ---------- home: photos ----------
+const photos = {front:null, back:null};
+function wirePick(inputId, pickId, key, label){
+  $(inputId).addEventListener("change", e=>{
+    const f = e.target.files[0]; photos[key] = f||null;
+    const pick = $(pickId); pick.classList.toggle("has", !!f);
+    pick.replaceChildren();
+    if(f){ const img = el("img",{alt:label}); img.src = URL.createObjectURL(f); pick.append(img, el("small",{text:"Tap to retake"}), e.target); }
+    else { pick.append(el("span",{text:"📷 "+label}), e.target); }
+    $("readBtn").disabled = !photos.front && !photos.back;
+  });
+}
+wirePick("fFront","pickFront","front","Front");
+wirePick("fBack","pickBack","back","Back");
+
+$("readBtn").onclick = async () => {
+  const btn = $("readBtn"); $("readErr").textContent = "";
+  const fd = new FormData();
+  for(const k of ["front","back"]) if(photos[k]) fd.append("files", photos[k]);
+  btn.disabled = true; btn.replaceChildren(el("span",{class:"spin"}), " Reading…");
+  try{
+    const r = await fetch("/api/extract",{method:"POST",body:fd});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.detail || "Something went wrong. Please try again.");
+    openCheck(j);
+  }catch(e){ $("readErr").textContent = e.message; }
+  finally{ btn.disabled=false; btn.textContent="Read recipe"; }
+};
+
+// ---------- home: library ----------
+function renderLibrary(){
+  const box = $("library"); box.replaceChildren();
+  const list = load();
+  if(!list.length){ box.append(el("p",{class:"muted",text:"Nothing saved yet. Photograph a card or add the samples."})); return; }
+  for(const item of list){
+    box.append(el("div",{class:"card lib"},[
+      el("button",{class:"open",text:item.recipe.name,onclick:()=>openScale(item)}),
+      el("button",{class:"del","aria-label":"Delete "+item.recipe.name,text:"✕",onclick:()=>{
+        if(confirm("Delete this recipe from this device?")){ store(load().filter(x=>x.id!==item.id)); renderLibrary(); } }})
+    ]));
+  }
+}
+$("samplesBtn").onclick = () => {
+  const have = new Set(load().map(x=>x.recipe.name));
+  const add = SAMPLES.filter(s=>!have.has(s.name)).map(r=>({id:uid(),recipe:r}));
+  store(load().concat(add)); renderLibrary();
+};
+
+// ---------- check screen ----------
+let editing = null; // {id|null, ings:[]}
+function openCheck(r, id=null){
+  editing = {id, ings: r.ingredients.map(i=>({...i}))};
+  $("cName").value = r.name; $("cPortions").value = r.portions||"";
+  $("cWeight").value = r.portion_weight_g||""; $("cMethod").value = (r.method||[]).join("\n");
+  $("checkErr").textContent=""; renderIngs(); show("check","Check recipe");
+}
+function renderIngs(){
+  const box = $("cIngs"); box.replaceChildren();
+  editing.ings.forEach((ing,idx)=>{
+    const q = el("input",{type:"number",inputmode:"decimal",step:"any",min:"0","aria-label":"Quantity"}); q.value = ing.quantity ?? "";
+    q.oninput = () => { ing.quantity = q.value===""? null : parseFloat(q.value); if(ing.quantity===null) ing.unit=ing.unit; };
+    const u = el("select",{"aria-label":"Unit"},["g","kg","ml","l","each",""].map(x=>el("option",{value:x,text:x||"—"})));
+    u.value = ing.unit ?? ""; u.onchange = () => { ing.unit = u.value||null; };
+    const n = el("input",{type:"text","aria-label":"Ingredient"}); n.value = ing.name; n.oninput = () => { ing.name = n.value; };
+    const x = el("button",{class:"x","aria-label":"Remove",text:"✕",onclick:()=>{ editing.ings.splice(idx,1); renderIngs(); }});
+    box.append(el("div",{class:"ing"+(ing.uncertain?" unsure":"")},[q,u,n,x]));
+  });
+}
+$("addIng").onclick = () => { editing.ings.push({name:"",quantity:null,unit:"g"}); renderIngs(); };
+$("saveBtn").onclick = () => {
+  const portions = parseFloat($("cPortions").value);
+  if(!($("cName").value.trim())) return $("checkErr").textContent = "Give the recipe a name.";
+  if(!(portions>0)) return $("checkErr").textContent = "Enter how many portions the quantities are for.";
+  const ings = editing.ings.filter(i=>i.name.trim()).map(i=>({
+    name:i.name.trim(), quantity:(i.quantity>0 && i.unit)? i.quantity : null, unit:(i.quantity>0 && i.unit)? i.unit : null, note:i.note||""}));
+  if(!ings.length) return $("checkErr").textContent = "Add at least one ingredient.";
+  const w = parseFloat($("cWeight").value);
+  const recipe = {name:$("cName").value.trim(), portions, portion_weight_g: w>0? w : null, ingredients:ings,
+    method: $("cMethod").value.split("\n").map(s=>s.trim()).filter(Boolean)};
+  const list = load(); const item = {id: editing.id || uid(), recipe};
+  const i = list.findIndex(x=>x.id===item.id); if(i>=0) list[i]=item; else list.push(item);
+  store(list); openScale(item);
+};
+
+// ---------- scale screen ----------
+let cur = null, mode = "portions", timer = null;
+function openScale(item){
+  cur = item; mode = "portions"; const r = item.recipe;
+  $("sPortions").value = r.portions; $("sPer").checked = false; $("scaleErr").textContent="";
+  const sel = $("sIngSel"); sel.replaceChildren();
+  r.ingredients.forEach((i,idx)=>{ if(i.quantity) sel.append(el("option",{value:idx,text:i.name})); });
+  setUnits(); $("sAmount").value = "";
+  setMode("portions");
+  $("sMethod").replaceChildren(...r.method.map(s=>el("li",{text:s})));
+  show("scale", r.name); run();
+}
+function setUnits(){
+  const ing = cur.recipe.ingredients[parseInt($("sIngSel").value)||0]; if(!ing) return;
+  $("sUnit").replaceChildren(...(UNIT_FAMILY[ing.unit]||[ing.unit]).map(u=>el("option",{value:u,text:u})));
+  $("sUnit").value = ing.unit;
+}
+function setMode(m){
+  mode = m; $("tabPortions").classList.toggle("on", m==="portions"); $("tabIng").classList.toggle("on", m==="ingredient");
+  $("inPortions").hidden = m!=="portions"; $("inIng").hidden = m!=="ingredient"; run();
+}
+$("tabPortions").onclick = () => setMode("portions");
+$("tabIng").onclick = () => setMode("ingredient");
+$("sIngSel").onchange = () => { setUnits(); run(); };
+for(const id of ["sPortions","sAmount","sUnit","sPer"]) $(id).addEventListener("input", ()=>{ clearTimeout(timer); timer=setTimeout(run,250); });
+
+async function run(){
+  if(!cur) return;
+  const body = {recipe:cur.recipe, mode, per_portion: $("sPer").checked};
+  if(mode==="portions") body.target_portions = parseFloat($("sPortions").value) || null;
+  else { body.ingredient_index = parseInt($("sIngSel").value); body.amount = parseFloat($("sAmount").value)||null; body.unit = $("sUnit").value; }
+  if(mode==="portions" && !body.target_portions && !body.per_portion){ return; }
+  if(mode==="ingredient" && !body.amount){ $("sList").replaceChildren(); $("sHead").textContent=""; $("sSub").textContent="Enter the amount you have"; $("scaleErr").textContent=""; return; }
+  try{
+    const r = await fetch("/api/scale",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+    const j = await r.json();
+    if(!r.ok){ $("scaleErr").textContent = typeof j.detail==="string"? j.detail : "Check the numbers you entered."; return; }
+    $("scaleErr").textContent = "";
+    $("sHead").textContent = j.per_portion ? "Per portion" : `${j.portions} portions`;
+    $("sSub").textContent = j.total_weight ? (j.per_portion? `Portion weight ${j.total_weight}` : `Total about ${j.total_weight}`) : "";
+    $("sList").replaceChildren(...j.ingredients.map(i=>el("li",{},[
+      el("span",{class:"n"},[i.name, i.note? el("small",{text:i.note}):null]),
+      el("span",{class:"q",text:i.display||"—"})])));
+  }catch(e){ $("scaleErr").textContent = "Couldn't reach the server."; }
+}
+
+renderLibrary();
+</script>
+</body>
+</html>
