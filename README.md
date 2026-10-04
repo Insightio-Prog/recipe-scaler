@@ -2,7 +2,7 @@
 
 Photograph a kitchen recipe card, let AI read it, then scale it by **portions** or by **any one ingredient** ("I have 5 kg of beans, how much of everything else?"). Built for a working kitchen: phone first, grams and millilitres, big buttons.
 
-**Live demo:** _add link after deploy_ · Sample recipes are invented; no real company recipes are stored.
+**Live demo:** https://recipescaler.insightio.co.uk · Sample recipes are invented; no real company recipes are stored.
 
 ## How it works
 1. **Photo → data.** Up to two photos (front and back of a card) go to Claude's vision model, which must answer through a strict `save_recipe` tool (name, portions, ingredients with quantity and unit, method). Supplier names, product codes and pack sizes are dropped.
