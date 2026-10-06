@@ -29,3 +29,12 @@ pytest
 
 ## Stack
 Python 3.11+, FastAPI, Anthropic SDK (tool use + vision), Pillow, vanilla JS front end, pytest (27 tests).
+
+## More projects
+All built with Claude, all live with public code:
+
+| Project | Live demo | Code |
+|---|---|---|
+| Patterns | [patterns.insightio.co.uk](https://patterns.insightio.co.uk) | [Insightio-Prog/patterns](https://github.com/Insightio-Prog/patterns) |
+| Refluxio | [refluxio.insightio.co.uk](https://refluxio.insightio.co.uk) | [Insightio-Prog/refluxio](https://github.com/Insightio-Prog/refluxio) |
+| Paper Terminal | [paperterminal.insightio.co.uk](https://paperterminal.insightio.co.uk) | [Insightio-Prog/paper-terminal](https://github.com/Insightio-Prog/paper-terminal) |
